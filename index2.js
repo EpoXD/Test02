@@ -2,12 +2,12 @@ import { WebSocketServer } from 'ws';
 import { WebSocket } from "ws";
 import { randomBytes } from "crypto";
 
+let socket;
 
-function createBot(token, tokenid, recaptcha, RAWHOST, CUTHOST) {
+function createSocket(recaptcha, CUTHOST) {
     try {
-        console.log("creating bot " + RAWHOST + " " + recaptcha);
-
-        const socket = new WebSocket("wss://" + CUTHOST, {
+        console.log("created Socket")
+        socket = new WebSocket("wss://" + CUTHOST, {
             headers: {
                 CUTHOST,
                 "connection": "Upgrade",
@@ -25,6 +25,18 @@ function createBot(token, tokenid, recaptcha, RAWHOST, CUTHOST) {
         });
 
         socket.binaryType = "arraybuffer";
+
+        joinToken(token, tokenid, recaptcha)
+
+    } catch(e) {
+        console.log(e);
+    }
+}
+
+
+function joinToken(token, tokenid, recaptcha) {
+    try {
+        console.log("joining on token");
 
         socket.onopen = function (event) {
             console.log(token)
@@ -69,9 +81,9 @@ function createBot(token, tokenid, recaptcha, RAWHOST, CUTHOST) {
                 }
             }
         }
-        socket.onerror = function (event) {
-            console.log("socket error");
-        }
+        // socket.onerror = function (event) {
+        //     console.log("socket error");
+        // }
         socket.onclose = function () {
             console.log("ws closed");
         }
@@ -104,7 +116,8 @@ wss.on('connection', function connection(ws) {
                 let RAWHOST = packet[2];
                 let CUTHOST = packet[3];
                 
-                createBot(STARVE_TOKEN, STARVE_TOKEN_ID, recaptcha, RAWHOST, CUTHOST)
+                createSocket(STARVE_TOKEN, recaptcha, CUTHOST)
+                // createBot(STARVE_TOKEN, STARVE_TOKEN_ID, recaptcha, RAWHOST, CUTHOST)
                 break;
             case "tokens":
                 STARVE_TOKEN = packet[1];
