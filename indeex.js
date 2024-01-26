@@ -2,14 +2,12 @@ import { WebSocketServer } from 'ws';
 import { WebSocket } from "ws";
 import { randomBytes } from "crypto";
 
-let socket;
-let killed = false;
-let stoled_token = false;
 
-function createSocket(token, tokenid, recaptcha, CUTHOST) {
+function createBot(token, tokenid, recaptcha, RAWHOST, CUTHOST) {
     try {
-        console.log("created Socket")
-        socket = new WebSocket("wss://" + CUTHOST, {
+        console.log("creating bot " + RAWHOST + " " + recaptcha);
+
+        const socket = new WebSocket("wss://" + CUTHOST, {
             headers: {
                 CUTHOST,
                 "connection": "Upgrade",
@@ -27,18 +25,6 @@ function createSocket(token, tokenid, recaptcha, CUTHOST) {
         });
 
         socket.binaryType = "arraybuffer";
-
-        joinToken(token, tokenid, recaptcha)
-
-    } catch(e) {
-        console.log(e);
-    }
-}
-
-
-function joinToken(token, tokenid, recaptcha) {
-    try {
-        console.log("joining on token");
 
         socket.onopen = function (event) {
             console.log(token)
@@ -80,26 +66,14 @@ function joinToken(token, tokenid, recaptcha) {
                         if(ui8[2] < 80) {
                             socket.send(JSON.stringify([5, 104]))
                         }
-                        break;
-                    case 25:
-                        // killed
-                        killed = true
-
-                        break;
-                    case 30:
-                        // stoled token
-                        stoled_token = true;
-                        break;
                 }
             }
         }
-        // socket.onerror = function (event) {
-        //     console.log("socket error");
-        // }
-        
+        socket.onerror = function (event) {
+            console.log("socket error");
+        }
         socket.onclose = function () {
-            if(!killed && !stoled_token )
-            joinToken(token, tokenid, recaptcha)
+            console.log("ws closed");
         }
 
 
@@ -130,8 +104,7 @@ wss.on('connection', function connection(ws) {
                 let RAWHOST = packet[2];
                 let CUTHOST = packet[3];
                 
-                createSocket(STARVE_TOKEN, STARVE_TOKEN_ID, recaptcha, CUTHOST)
-                // createBot(STARVE_TOKEN, STARVE_TOKEN_ID, recaptcha, RAWHOST, CUTHOST)
+                createBot(STARVE_TOKEN, STARVE_TOKEN_ID, recaptcha, RAWHOST, CUTHOST)
                 break;
             case "tokens":
                 STARVE_TOKEN = packet[1];

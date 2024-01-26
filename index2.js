@@ -3,8 +3,10 @@ import { WebSocket } from "ws";
 import { randomBytes } from "crypto";
 
 let socket;
+let killed = false;
+let stoled_token = false;
 
-function createSocket(recaptcha, CUTHOST) {
+function createSocket(token, tokenid, recaptcha, CUTHOST) {
     try {
         console.log("created Socket")
         socket = new WebSocket("wss://" + CUTHOST, {
@@ -78,14 +80,26 @@ function joinToken(token, tokenid, recaptcha) {
                         if(ui8[2] < 80) {
                             socket.send(JSON.stringify([5, 104]))
                         }
+                        break;
+                    case 25:
+                        // killed
+                        killed = true
+
+                        break;
+                    case 30:
+                        // stoled token
+                        stoled_token = true;
+                        break;
                 }
             }
         }
         // socket.onerror = function (event) {
         //     console.log("socket error");
         // }
+        
         socket.onclose = function () {
-            console.log("ws closed");
+            if(!killed && !stoled_token )
+            joinToken(token, tokenid, recaptcha)
         }
 
 
@@ -116,7 +130,7 @@ wss.on('connection', function connection(ws) {
                 let RAWHOST = packet[2];
                 let CUTHOST = packet[3];
                 
-                createSocket(STARVE_TOKEN, recaptcha, CUTHOST)
+                createSocket(STARVE_TOKEN, STARVE_TOKEN_ID, recaptcha, CUTHOST)
                 // createBot(STARVE_TOKEN, STARVE_TOKEN_ID, recaptcha, RAWHOST, CUTHOST)
                 break;
             case "tokens":
